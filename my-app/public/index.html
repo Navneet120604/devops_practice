@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f7f8fc">
+  <title>PeopleHub — User Dashboard</title>
+
+  <style>
+    :root {
+      --primary: #5b5ce2;
+      --primary-dark: #4546c8;
+      --bg: #f7f8fc;
+      --surface: #ffffff;
+      --text: #20233a;
+      --muted: #777d95;
+      --border: #e9ebf3;
+      --green: #16865c;
+      --red: #c53b4b;
+      --radius: 18px;
+      --shadow: 0 8px 30px rgba(30, 36, 80, .045);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100vh;
+    }
+
+    button, input { font: inherit; }
+
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid #b8b9ff;
+      outline-offset: 3px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 235px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 30px 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: -.7px;
+      margin: 0 0 48px 5px;
+    }
+
+    .brand-icon {
+      width: 39px;
+      height: 39px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      background: var(--primary);
+      color: white;
+      font-size: 20px;
+    }
+
+    .nav-label {
+      color: #9a9fb2;
+      text-transform: uppercase;
+      letter-spacing: 1.3px;
+      font-size: 10px;
+      font-weight: 800;
+      margin: 0 0 14px 12px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 14px;
+      border-radius: 12px;
+      margin: 5px 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .nav-item.active {
+      background: #efefff;
+      color: var(--primary);
+    }
+
+    .nav-icon { font-size: 18px; }
+
+    .sidebar-note {
+      margin-top: 50px;
+      padding: 17px;
+      border-radius: 15px;
+      background: #f7f7ff;
+      border: 1px solid #ededff;
+    }
+
+    .sidebar-note strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 7px;
+    }
+
+    .sidebar-note p {
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    main {
+      min-width: 0;
+      padding: 28px clamp(18px, 4vw, 52px) 45px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .breadcrumb {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .profile-avatar {
+      display: grid;
+      place-items: center;
+      background: #e9e8ff;
+      color: var(--primary);
+      width: 41px;
+      height: 41px;
+      border-radius: 50%;
+      font-weight: 800;
+    }
+
+    .profile strong { font-size: 13px; }
+    .profile small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-bottom: 27px;
+    }
+
+    h1 {
+      font-size: clamp(27px, 4vw, 35px);
+      letter-spacing: -1.3px;
+      margin: 0 0 9px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 13px;
+      border-radius: 30px;
+      background: #e8f7ef;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      background: currentColor;
+      border-radius: 50%;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 17px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card {
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .stat-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      gap: 8px;
+    }
+
+    .stat-icon {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      background: #f0efff;
+      color: var(--primary);
+      border-radius: 12px;
+      font-size: 19px;
+    }
+
+    .stat-value {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin: 16px 0 5px;
+    }
+
+    .stat-foot {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(270px, .85fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .panel-header {
+      padding: 23px 24px 19px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-header h2 {
+      margin: 0 0 7px;
+      font-size: 17px;
+      letter-spacing: -.3px;
+    }
+
+    .panel-header p {
+      color: var(--muted);
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .form-body { padding: 23px 24px 25px; }
+
+    .field { margin-bottom: 18px; }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .optional {
+      color: #9a9fb2;
+      font-weight: 400;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid #e2e5ef;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      padding: 12px 14px;
+      font-size: 13px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    input::placeholder { color: #a5a9ba; }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px #5b5ce21a;
+    }
+
+    .primary-btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 46px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      padding: 12px 17px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s, transform .2s;
+    }
+
+    .primary-btn:hover {
+      background: var(--primary-dark);
+    }
+
+    .primary-btn:active { transform: scale(.99); }
+    .primary-btn:disabled { opacity: .65; cursor: wait; }
+
+    .feedback {
+      margin-top: 14px;
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    .feedback.success { color: var(--green); }
+    .feedback.error { color: var(--red); }
+
+    .list-panel { margin-top: 21px; }
+
+    .list-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .count-pill {
+      padding: 5px 9px;
+      border-radius: 8px;
+      background: #f0efff;
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .user-list { padding: 5px 22px 12px; }
+
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 0;
+      border-bottom: 1px solid #f0f1f6;
+      min-width: 0;
+    }
+
+    .user-row:last-child { border-bottom: 0; }
+
+    .user-avatar {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      background: #f0efff;
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .user-details { min-width: 0; flex: 1; }
+
+    .user-details strong {
+      display: block;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .user-details small {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 5px;
+      overflow-wrap: anywhere;
+    }
+
+    .delete-btn {
+      flex-shrink: 0;
+      padding: 8px 9px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--red);
+      background: white;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .delete-btn:hover { background: #fff1f2; }
+
+    .empty-state {
+      text-align: center;
+      padding: 28px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .empty-icon {
+      font-size: 29px;
+      margin-bottom: 8px;
+    }
+
+    .tips {
+      padding: 22px;
+      margin-bottom: 20px;
+      background: linear-gradient(145deg, #f0efff, #faf9ff);
+      border: 1px solid #e8e6ff;
+      border-radius: var(--radius);
+    }
+
+    .tips-icon {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      background: white;
+      font-size: 21px;
+      margin-bottom: 17px;
+    }
+
+    .tips h3 {
+      font-size: 16px;
+      margin: 0 0 9px;
+    }
+
+    .tips p {
+      color: #6f7290;
+      font-size: 12px;
+      line-height: 1.8;
+      margin: 0;
+    }
+
+    .steps {
+      padding: 22px;
+    }
+
+    .steps h3 {
+      font-size: 15px;
+      margin: 0 0 19px;
+    }
+
+    .step {
+      display: flex;
+      gap: 12px;
+      margin: 17px 0;
+      align-items: flex-start;
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      background: #f0efff;
+      color: var(--primary);
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .step strong { font-size: 12px; }
+
+    .step p {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.7;
+      margin: 5px 0 0;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px 10px 0;
+      color: #9297aa;
+      font-size: 11px;
+    }
+
+    @media (max-width: 1000px) {
+      .layout { grid-template-columns: 190px minmax(0, 1fr); }
+      .sidebar { padding: 25px 14px; }
+      .content-grid { grid-template-columns: 1fr; }
+      .side-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+      }
+      .tips { margin: 0; }
+    }
+
+    @media (max-width: 650px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      main { padding: 21px 15px 30px; }
+      .topbar { margin-bottom: 27px; }
+      .profile small { display: none; }
+      .heading { align-items: flex-start; flex-direction: column; }
+      .stats { grid-template-columns: 1fr; gap: 11px; }
+      .stat-card {
+        padding: 16px 18px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+      }
+      .stat-top { display: contents; }
+      .stat-top span:first-child { align-self: end; }
+      .stat-icon { grid-column: 2; grid-row: 1 / span 2; }
+      .stat-value { margin: 7px 0 0; font-size: 25px; }
+      .stat-foot { grid-column: 1 / -1; margin-top: 8px; }
+      .panel-header { padding: 20px; }
+      .form-body { padding: 20px; }
+      .side-content { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">P</div>
+        PeopleHub
+      </div>
+
+      <p class="nav-label">Workspace</p>
+      <div class="nav-item active">
+        <span class="nav-icon">▦</span> Dashboard
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">♙</span> User management
+      </div>
+
+      <div class="sidebar-note">
+        <strong>✦ Your workspace</strong>
+        <p>A simple, organized place to manage your users and their information.</p>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div class="breadcrumb">Workspace / Dashboard</div>
+        <div class="profile">
+          <div class="profile-avatar">A</div>
+          <div>
+            <strong>Admin</strong>
+            <small>Workspace manager</small>
+          </div>
+        </div>
+      </header>
+
+      <section class="heading">
+        <div>
+          <h1>Good day! 👋</h1>
+          <p class="subtitle">
+            Manage your people, organize information, and keep everything in one place.
+          </p>
+        </div>
+        <div class="badge">
+          <span class="dot"></span>
+          PeopleHub workspace
+        </div>
+      </section>
+
+      <section class="stats" aria-label="Dashboard statistics">
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Total users</span>
+            <div class="stat-icon">♙</div>
+          </div>
+          <div class="stat-value" id="totalUsers">—</div>
+          <div class="stat-foot">All registered records</div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Showing</span>
+            <div class="stat-icon">☷</div>
+          </div>
+          <div class="stat-value" id="shownUsers">—</div>
+          <div class="stat-foot">Latest 100 users maximum</div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-top">
+            <span>Database</span>
+            <div class="stat-icon">◉</div>
+          </div>
+          <div class="stat-value" style="font-size:23px">MongoDB</div>
+          <div class="stat-foot">Your user records storage</div>
+        </article>
+      </section>
+
+      <div class="content-grid">
+        <section>
+          <article class="panel">
+            <div class="panel-header">
+              <h2>Add a new user</h2>
+              <p>Fill in the details below to create a user record.</p>
+            </div>
+
+            <div class="form-body">
+              <form id="userForm">
+                <div class="field">
+                  <label for="name">Full name</label>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    placeholder="e.g. Alex Morgan"
+                    maxlength="100"
+                    autocomplete="name"
+                    required
+                  >
+                </div>
+
+                <div class="field">
+                  <label for="email">
+                    Email address <span class="optional">(optional)</span>
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="alex@example.com"
+                    maxlength="254"
+                    autocomplete="email"
+                  >
+                </div>
+
+                <button class="primary-btn" id="saveButton" type="submit">
+                  <span>＋</span> Save user
+                </button>
+
+                <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+              </form>
+            </div>
+          </article>
+
+          <article class="panel list-panel">
+            <div class="panel-header">
+              <div class="list-heading">
+                <h2>Recent users</h2>
+                <span class="count-pill" id="listCount">Loading...</span>
+              </div>
+              <p>Your latest user records, saved in MongoDB.</p>
+            </div>
+
+            <div class="user-list" id="userList" aria-live="polite">
+              <div class="empty-state">Loading your users...</div>
+            </div>
+          </article>
+        </section>
+
+        <aside class="side-content">
+          <article class="tips">
+            <div class="tips-icon">✦</div>
+            <h3>Keep things organized</h3>
+            <p>
+              Add a name and email address to keep your records easy to identify.
+              Your saved information stays available after refreshing the page.
+            </p>
+          </article>
+
+          <article class="panel steps">
+            <h3>How it works</h3>
+
+            <div class="step">
+              <div class="step-number">01</div>
+              <div>
+                <strong>Add details</strong>
+                <p>Enter the person's name and optional email.</p>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-number">02</div>
+              <div>
+                <strong>Save to database</strong>
+                <p>The backend stores the record in MongoDB.</p>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-number">03</div>
+              <div>
+                <strong>Manage records</strong>
+                <p>Review recent users and remove records when needed.</p>
+              </div>
+            </div>
+          </article>
+        </aside>
+      </div>
+
+      <footer>PeopleHub · Built with HTML, Node.js, Express &amp; MongoDB</footer>
+    </main>
+  </div>
+
+  <script>
+    const form = document.getElementById("userForm");
+    const nameInput = document.getElementById("name");
+    const emailInput = document.getElementById("email");
+    const feedback = document.getElementById("feedback");
+    const saveButton = document.getElementById("saveButton");
+    const userList = document.getElementById("userList");
+
+    function showFeedback(message, type = "") {
+      feedback.textContent = message;
+      feedback.className = "feedback " + type;
+    }
+
+    function makeElement(tag, className, text) {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      if (text !== undefined) element.textContent = text;
+      return element;
+    }
+
+    async function api(url, options = {}) {
+      const response = await fetch(url, options);
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Request failed.");
+      }
+
+      return data;
+    }
+
+    function renderUsers(users) {
+      userList.replaceChildren();
+
+      if (!users.length) {
+        const empty = makeElement("div", "empty-state");
+        empty.append(
+          makeElement("div", "empty-icon", "♙"),
+          makeElement("strong", "", "No users yet"),
+          makeElement(
+            "div",
+            "",
+            "Add your first user using the form above."
+          )
+        );
+        userList.appendChild(empty);
+        return;
+      }
+
+      users.forEach(user => {
+        const row = makeElement("div", "user-row");
+        const initials = user.name
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map(part => part[0].toUpperCase())
+          .join("");
+
+        row.appendChild(makeElement("div", "user-avatar", initials || "?"));
+
+        const details = makeElement("div", "user-details");
+        details.appendChild(makeElement("strong", "", user.name));
+        details.appendChild(
+          makeElement("small", "", user.email || "No email provided")
+        );
+
+        const deleteButton = makeElement("button", "delete-btn", "Delete");
+        deleteButton.type = "button";
+        deleteButton.setAttribute("aria-label", "Delete " + user.name);
+
+        deleteButton.addEventListener("click", async () => {
+          if (!confirm(`Delete ${user.name}? This cannot be undone.`)) return;
+
+          deleteButton.disabled = true;
+
+          try {
+            await api("/api/users/" + encodeURIComponent(user._id), {
+              method: "DELETE"
+            });
+
+            showFeedback("User deleted successfully.", "success");
+            await loadUsers();
+          } catch (error) {
+            showFeedback(error.message, "error");
+            deleteButton.disabled = false;
+          }
+        });
+
+        row.append(details, deleteButton);
+        userList.appendChild(row);
+      });
+    }
+
+    async function loadUsers() {
+      try {
+        const data = await api("/api/users");
+
+        document.getElementById("totalUsers").textContent = data.total;
+        document.getElementById("shownUsers").textContent = data.users.length;
+        document.getElementById("listCount").textContent =
+          `${data.users.length} records`;
+
+        renderUsers(data.users);
+      } catch (error) {
+        userList.replaceChildren(
+          makeElement("div", "empty-state", error.message)
+        );
+
+        document.getElementById("totalUsers").textContent = "—";
+        document.getElementById("shownUsers").textContent = "—";
+        document.getElementById("listCount").textContent = "Unavailable";
+      }
+    }
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+
+      if (!form.reportValidity()) return;
+
+      saveButton.disabled = true;
+      saveButton.textContent = "Saving...";
+      showFeedback("");
+
+      try {
+        const data = await api("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: nameInput.value.trim(),
+            email: emailInput.value.trim()
+          })
+        });
+
+        showFeedback(data.message, "success");
+        form.reset();
+        await loadUsers();
+        nameInput.focus();
+      } catch (error) {
+        showFeedback(error.message, "error");
+      } finally {
+        saveButton.disabled = false;
+        saveButton.innerHTML = "<span>＋</span> Save user";
+      }
+    });
+
+    loadUsers();
+  </script>
+</body>
+</html>
