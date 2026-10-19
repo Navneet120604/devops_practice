@@ -1,0 +1,45 @@
+# Ignore source control metadata
+.git
+.gitignore
+.github
+
+# Ignore development dependencies & heavy folders
+node_modules/
+jspm_packages/
+.npm
+.yarn
+venv/
+.venv
+env/
+橡__pycache__/
+*.pyc
+
+# Ignore build outputs and artifacts
+dist/
+build/
+out/
+target/
+*.log
+
+# Ignore local configuration and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+id_rsa
+secrets.json
+
+# Ignore IDE settings & OS junk files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.DS_Store
+Thumbs.db
+
+# Ignore Docker metadata itself (optional, prevents cache invalidation)
+Dockerfile
+.dockerignore
