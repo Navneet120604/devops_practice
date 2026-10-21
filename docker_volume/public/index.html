@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps App: Node + Mongo + Docker</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #090d16;
+            color: #f1f5f9;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+        header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        h1 {
+            color: #38bdf8;
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+        .status-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+        .dot.connected { background: #22c55e; }
+        .card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        input {
+            flex: 1;
+            padding: 10px 14px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        input:focus { outline: 2px solid #38bdf8; }
+        button {
+            padding: 10px 18px;
+            background: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover { background: #0369a1; }
+        .user-list {
+            list-style: none;
+            margin-top: 12px;
+        }
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .role-tag {
+            background: #1e293b;
+            color: #38bdf8;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Docker + Node + Mongo 🐳</h1>
+            <div class="status-bar">
+                <span id="status-dot" class="dot"></span>
+                <span id="status-text">Checking DB Connection...</span>
+            </div>
+        </header>
+
+        <div class="card">
+            <h3>Add New User to MongoDB</h3>
+            <form id="user-form" class="form-group">
+                <input type="text" id="name" placeholder="User Name (e.g. Rahul)" required />
+                <input type="text" id="role" placeholder="Role (e.g. DevOps Engineer)" required />
+                <button type="submit">Save</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Users from MongoDB</h3>
+            <ul id="user-list" class="user-list">
+                <li style="color:#64748b; padding:10px 0;">Loading users...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                const dot = document.getElementById('status-dot');
+                const text = document.getElementById('status-text');
+                if (data.database === 'connected') {
+                    dot.classList.add('connected');
+                    text.innerText = 'MongoDB Connected';
+                } else {
+                    text.innerText = 'MongoDB Disconnected';
+                }
+            } catch {
+                document.getElementById('status-text').innerText = 'Server Offline';
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/users');
+                const users = await res.json();
+                const list = document.getElementById('user-list');
+                if (!users.length) {
+                    list.innerHTML = '<li style="color:#64748b; padding:10px 0;">No users in DB yet.</li>';
+                    return;
+                }
+                list.innerHTML = users.map(u => `
+                    <li class="user-item">
+                        <span><strong>${u.name}</strong></span>
+                        <span class="role-tag">${u.role}</span>
+                    </li>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.getElementById('user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const role = document.getElementById('role').value;
+            await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, role })
+            });
+            document.getElementById('name').value = '';
+            document.getElementById('role').value = '';
+            loadUsers();
+        });
+
+        checkStatus();
+        loadUsers();
+        setInterval(checkStatus, 5000);
+    </script>
+</body>
+</html>
