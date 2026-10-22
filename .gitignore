@@ -141,6 +141,9 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
-
+# Docker Volumes & Persistent Directories
 docvol-storage/
 mongo-data/
+jenkins/jenkins_home/
+jenkins_home/
+*-data/
