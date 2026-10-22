@@ -1,39 +1,59 @@
-version: '3'
 services:
   mongodb:
-    image: mongo
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
     ports:
-    - 27017:27017
+      - "27017:27017"
     environment:
-    - MONGO_INITDB_ROOT_USERNAME=admin
-    - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - ./mongo-data:/data/db
     networks:
-    - docvol-network
+      - docvol-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   mongo-express:
-    image: mongo-express
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: always
     ports:
-    - 8082:8080
+      - "8082:8081"
     environment:
-    - ME_CONFIG_MONGODB_SERVER=mongodb
-    - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
-    - ME_CONFIG_MONGODB_ADMINPASSWORD=password
-    - ME_CONFIG_BASICAUTH_USERNAME=expressadmin
-    - ME_CONFIG_BASICAUTH_PASSWORD=expresspassword
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_BASICAUTH_USERNAME=expressadmin
+      - ME_CONFIG_BASICAUTH_PASSWORD=expresspassword
+    depends_on:
+      mongodb:
+        condition: service_healthy
     networks:
-    - docvol-network
+      - docvol-network
 
   docvol:
-    image: docvol:1.0
     build: .
+    container_name: docvol-app
+    restart: always
     ports:
-    - 3002:3002
+      - "3002:3000"
     environment:
-    - MONGODB_URI=mongodb://admin:password@mongodb:27017/myapp?authSource=admin
+      - PORT=3000
+      - MONGO_URL=mongodb://admin:password@mongodb:27017/devops_db?authSource=admin
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - ./docvol-storage:/app/uploads
     depends_on:
-    - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
-    - docvol-network
+      - docvol-network
 
 networks:
   docvol-network:

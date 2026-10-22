@@ -5,5 +5,5 @@ COPY package*.json ./
 RUN npm install
 
 COPY . /home/docvol
-EXPOSE 3002
+EXPOSE 3000
 CMD ["node","server.js"]
