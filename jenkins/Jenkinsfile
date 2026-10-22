@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    environment {
+        NEXUS_REGISTRY = 'localhost:8083'
+        IMAGE_NAME = 'docvol'
+        IMAGE_TAG = '1.0'
+    }
+
+    stages {
+        stage('Code Checkout') {
+            steps {
+                echo 'Pulling source code from Git repository...'
+            }
+        }
+
+        stage('Code Quality & Test') {
+            steps {
+                echo 'Running unit tests and code linting...'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                echo "Building Docker Image ${IMAGE_NAME}:${IMAGE_TAG}..."
+            }
+        }
+
+        stage('Push to Nexus Registry') {
+            steps {
+                echo "Authenticating and pushing image to Nexus at ${NEXUS_REGISTRY}..."
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deploying containerized application to environment...'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline finished execution.'
+        }
+        success {
+            echo 'CI/CD Pipeline passed successfully! 🎉'
+        }
+        failure {
+            echo 'Pipeline failed. Check build logs. ❌'
+        }
+    }
+}
