@@ -277,6 +277,104 @@ pipeline {
 
 ---
 
+## 8. Automating Docker Builds & Pushing to Docker Hub & Nexus
+
+In production CI/CD, we never hardcode plaintext passwords in scripts. Jenkins provides **Credentials Binding** (`usernamePassword`) to inject secrets securely at runtime and mask them in console logs (`****`).
+
+---
+
+### Part A: Push Automated Docker Images to Docker Hub
+
+#### Step 1: Create Docker Hub Personal Access Token (PAT)
+1. Login to [hub.docker.com](https://hub.docker.com).
+2. Click your avatar (top right) -> **Account Settings** -> **Security** -> **New Access Token**.
+3. Description: `jenkins-token`.
+4. Permissions: `Read, Write, Delete`.
+5. Click **Generate** and copy the access token (`dckr_pat_...`).
+
+#### Step 2: Store Credentials in Jenkins
+1. Open Jenkins Web UI (`http://localhost:8088`).
+2. Go to **Manage Jenkins** -> **Credentials** -> **System** -> **Global credentials (unrestricted)**.
+3. Click **+ Add Credentials**.
+4. Fill in:
+   * **Kind**: `Username with password`
+   * **Scope**: `Global`
+   * **Username**: Your Docker Hub username (e.g. `navneet1206`)
+   * **Password**: Docker Hub Access Token (`dckr_pat_...`)
+   * **ID**: `dockerhub-cred` *(Must match the ID in your script/pipeline)*
+   * **Description**: `Docker Hub Credentials for Automation`
+5. Click **Create**.
+
+#### Step 3A: Freestyle Job Shell Script (Docker Hub)
+In your job configuration under **Build Steps** -> **Execute shell**:
+```bash
+#!/bin/bash
+set -e
+
+# Load Jenkins Credential (Use 'Use secret text(s) or file(s)' under Build Environment to bind DH_USER and DH_PASS)
+echo "=== 1. Building Docker Image ==="
+cd docker_volume
+docker build -t ${DH_USER}/docvol:${BUILD_NUMBER} -t ${DH_USER}/docvol:latest .
+
+echo "=== 2. Authenticating to Docker Hub ==="
+echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
+
+echo "=== 3. Pushing Docker Image ==="
+docker push ${DH_USER}/docvol:${BUILD_NUMBER}
+docker push ${DH_USER}/docvol:latest
+
+echo "=== 4. Logout ==="
+docker logout
+
+echo "SUCCESS: Image pushed to Docker Hub -> https://hub.docker.com/r/${DH_USER}/docvol"
+```
+
+#### Step 3B: Pipeline (`Jenkinsfile.dockerhub`)
+See full pipeline code in [`jenkins/Jenkinsfile.dockerhub`](file:///home/nav/devops_practice/jenkins/Jenkinsfile.dockerhub).
+
+---
+
+### Part B: Push Automated Docker Images to Private Sonatype Nexus Registry
+
+#### Step 1: Store Nexus Credentials in Jenkins
+1. In Jenkins -> **Manage Jenkins** -> **Credentials** -> **System** -> **Global credentials**.
+2. Click **+ Add Credentials**:
+   * **Kind**: `Username with password`
+   * **Username**: `nothing` (or your Nexus user / `admin`)
+   * **Password**: `Navneet@123`
+   * **ID**: `nexus-cred`
+   * **Description**: `Sonatype Nexus Private Registry Credentials`
+3. Click **Create**.
+
+#### Step 2A: Freestyle Job Shell Script (Nexus Push)
+```bash
+#!/bin/bash
+set -e
+
+REGISTRY="localhost:8083"
+
+echo "=== 1. Building Docker Image ==="
+cd docker_volume
+docker build -t ${REGISTRY}/docvol:${BUILD_NUMBER} -t ${REGISTRY}/docvol:latest .
+
+echo "=== 2. Authenticating to Private Nexus Registry ==="
+echo "$NEXUS_PASS" | docker login ${REGISTRY} -u "$NEXUS_USER" --password-stdin
+
+echo "=== 3. Pushing to Nexus Repository ==="
+docker push ${REGISTRY}/docvol:${BUILD_NUMBER}
+docker push ${REGISTRY}/docvol:latest
+
+echo "=== 4. Logout ==="
+docker logout ${REGISTRY}
+
+echo "SUCCESS: Image published to Sonatype Nexus at ${REGISTRY}/docvol:${BUILD_NUMBER}"
+```
+
+#### Step 2B: Pipeline (`Jenkinsfile.nexus`)
+See full pipeline code in [`jenkins/Jenkinsfile.nexus`](file:///home/nav/devops_practice/jenkins/Jenkinsfile.nexus).
+
+---
+
 ## 9. Quick Command Reference
 
 ```bash
@@ -292,3 +390,4 @@ du -sh /home/nav/devops_practice/jenkins/jenkins_home
 # Reset workspace for a specific job
 docker exec -it jenkins rm -rf /var/jenkins_home/workspace/my-job
 ```
+

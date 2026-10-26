@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    environment {
+        // Docker Hub Config
+        DOCKERHUB_CRED_ID = 'dockerhub-cred'       // Jenkins Credentials ID
+        DOCKERHUB_USER    = 'navneet1206'          // Replace with your Docker Hub Username
+        IMAGE_NAME        = 'docvol'
+        IMAGE_TAG         = "${BUILD_NUMBER}"      // Auto-increment build tag e.g. 1, 2, 3...
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                echo "Fetching latest source code from repository..."
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo "=== Building Docker Image ==="
+                dir('docker_volume') {
+                    sh """
+                        docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} -t ${DOCKERHUB_USER}/${IMAGE_NAME}:latest .
+                    """
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                echo "=== Authenticating & Pushing to Docker Hub ==="
+                // Secure credential binding: masks passwords in logs automatically
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CRED_ID}", usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+                    sh """
+                        echo "\$DH_PASS" | docker login -u "\$DH_USER" --password-stdin
+                        docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+                        docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest
+                        docker logout
+                    """
+                }
+            }
+        }
+
+        stage('Cleanup Local Images') {
+            steps {
+                echo "=== Cleaning up build workspace images ==="
+                sh """
+                    docker rmi ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} || true
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "SUCCESS: Docker image pushed to Docker Hub -> https://hub.docker.com/r/${DOCKERHUB_USER}/${IMAGE_NAME}"
+        }
+        failure {
+            echo "FAILURE: Pipeline failed. Check console output for debugging."
+        }
+    }
+}

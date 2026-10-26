@@ -1,0 +1,65 @@
+pipeline {
+    agent any
+
+    environment {
+        // Nexus Registry Config
+        NEXUS_REGISTRY   = 'localhost:8083'       // Docker Hosted Registry Port
+        NEXUS_CRED_ID    = 'nexus-cred'           // Jenkins Credentials ID
+        IMAGE_NAME       = 'docvol'
+        IMAGE_TAG        = "${BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                echo "Fetching latest source code from repository..."
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo "=== Building Docker Image ==="
+                dir('docker_volume') {
+                    sh """
+                        docker build -t ${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} -t ${NEXUS_REGISTRY}/${IMAGE_NAME}:latest .
+                    """
+                }
+            }
+        }
+
+        stage('Push to Nexus Registry') {
+            steps {
+                echo "=== Authenticating & Pushing to Sonatype Nexus ==="
+                withCredentials([usernamePassword(credentialsId: "${NEXUS_CRED_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                    sh """
+                        echo "\$NEXUS_PASS" | docker login ${NEXUS_REGISTRY} -u "\$NEXUS_USER" --password-stdin
+                        docker push ${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+                        docker push ${NEXUS_REGISTRY}/${IMAGE_NAME}:latest
+                        docker logout ${NEXUS_REGISTRY}
+                    """
+                }
+            }
+        }
+
+        stage('Verify In Nexus') {
+            steps {
+                echo "=== Querying Nexus REST API for Upload Verification ==="
+                withCredentials([usernamePassword(credentialsId: "${NEXUS_CRED_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                    sh """
+                        curl -s -u "\$NEXUS_USER:\$NEXUS_PASS" -X GET "http://localhost:8081/service/rest/v1/components?repository=docker-hosted" | grep "${IMAGE_NAME}" || true
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "SUCCESS: Docker image pushed to Nexus Registry -> ${NEXUS_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+        failure {
+            echo "FAILURE: Pipeline failed. Check console logs."
+        }
+    }
+}
