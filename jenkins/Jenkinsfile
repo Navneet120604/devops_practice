@@ -2,39 +2,69 @@ pipeline {
     agent any
 
     environment {
-        NEXUS_REGISTRY = 'localhost:8083'
         IMAGE_NAME = 'docvol'
-        IMAGE_TAG = '1.0'
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+        CONTAINER_NAME = 'docvol-app-prod'
     }
 
     stages {
         stage('Code Checkout') {
             steps {
-                echo 'Pulling source code from Git repository...'
+                echo '=== Step 1: Checking out source code ==='
+                checkout scm
             }
         }
 
         stage('Code Quality & Test') {
             steps {
-                echo 'Running unit tests and code linting...'
+                echo '=== Step 2: Validating project files ==='
+                dir('docker_volume') {
+                    sh '''
+                        echo "Checking Node.js project syntax..."
+                        node -c server.js
+                        ls -la
+                    '''
+                }
             }
         }
 
         stage('Docker Build') {
             steps {
-                echo "Building Docker Image ${IMAGE_NAME}:${IMAGE_TAG}..."
+                echo "=== Step 3: Building Docker Image ${IMAGE_NAME}:${IMAGE_TAG} ==="
+                dir('docker_volume') {
+                    sh """
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .
+                    """
+                }
             }
         }
 
-        stage('Push to Nexus Registry') {
+        stage('Deploy Local Container') {
             steps {
-                echo "Authenticating and pushing image to Nexus at ${NEXUS_REGISTRY}..."
+                echo "=== Step 4: Deploying containerized app locally ==="
+                sh """
+                    # Stop & remove old container if running
+                    docker stop ${CONTAINER_NAME} || true
+                    docker rm ${CONTAINER_NAME} || true
+
+                    # Run new container
+                    docker run -d \
+                      --name ${CONTAINER_NAME} \
+                      -p 3002:3000 \
+                      --restart unless-stopped \
+                      ${IMAGE_NAME}:${IMAGE_TAG}
+                """
             }
         }
 
-        stage('Deploy') {
+        stage('Health Check') {
             steps {
-                echo 'Deploying containerized application to environment...'
+                echo "=== Step 5: Verifying container health ==="
+                sh """
+                    sleep 3
+                    docker ps | grep ${CONTAINER_NAME}
+                    echo "Application is up and running on port 3002!"
+                """
             }
         }
     }
@@ -44,7 +74,7 @@ pipeline {
             echo 'Pipeline finished execution.'
         }
         success {
-            echo 'CI/CD Pipeline passed successfully! 🎉'
+            echo "CI/CD Pipeline passed successfully! App deployed at http://localhost:3002 🎉"
         }
         failure {
             echo 'Pipeline failed. Check build logs. ❌'
