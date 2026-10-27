@@ -43,14 +43,40 @@ pipeline {
 
         stage('Deploy Application Stack') {
             steps {
-                echo "=== Step 4: Deploying full stack (MongoDB + App + Express) ==="
-                dir('docker_volume') {
-                    sh """
-                        # Start MongoDB & App stack using docker-compose
-                        docker compose down || true
-                        docker compose up -d
-                    """
-                }
+                echo "=== Step 4: Deploying full stack (MongoDB + App) ==="
+                sh """
+                    # 1. Create a dedicated bridge network if not already present
+                    docker network create docvol-net || true
+
+                    # 2. Start MongoDB container if not running
+                    if ! docker ps --format '{{.Names}}' | grep -q '^mongodb\$'; then
+                        echo "Starting MongoDB container..."
+                        docker rm -f mongodb || true
+                        docker run -d \\
+                            --name mongodb \\
+                            --network docvol-net \\
+                            -p 27017:27017 \\
+                            -e MONGO_INITDB_ROOT_USERNAME=admin \\
+                            -e MONGO_INITDB_ROOT_PASSWORD=password \\
+                            --restart always \\
+                            mongo:latest
+                    else
+                        echo "MongoDB container is already running."
+                    fi
+
+                    # 3. Deploy updated App container
+                    echo "Deploying ${CONTAINER_NAME} with image ${IMAGE_NAME}:${IMAGE_TAG}..."
+                    docker rm -f ${CONTAINER_NAME} || true
+                    docker run -d \\
+                        --name ${CONTAINER_NAME} \\
+                        --network docvol-net \\
+                        -p 3002:3000 \\
+                        -e PORT=3000 \\
+                        -e MONGO_URL=mongodb://admin:password@mongodb:27017/devops_db?authSource=admin \\
+                        -e UPLOAD_DIR=/app/uploads \\
+                        --restart unless-stopped \\
+                        ${IMAGE_NAME}:${IMAGE_TAG}
+                """
             }
         }
 
@@ -58,9 +84,12 @@ pipeline {
             steps {
                 echo "=== Step 5: Verifying container stack health ==="
                 sh """
-                    sleep 5
-                    docker ps | grep -E "docvol-app|mongodb"
-                    echo "Application is up and connected on port 3002!"
+                    sleep 6
+                    docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}" | grep -E "${CONTAINER_NAME}|mongodb"
+                    echo "Checking if App is responding..."
+                    docker exec ${CONTAINER_NAME} wget -qO- http://localhost:3000/api/health || true
+                    echo ""
+                    echo "Application is live and connected to MongoDB on port 3002!"
                 """
             }
         }
