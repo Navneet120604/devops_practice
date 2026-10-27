@@ -29,33 +29,58 @@ Comprehensive, production-grade DevOps repository showcasing end-to-end containe
 
 ## 🏛 Overview & Architecture
 
-This repository demonstrates real-world DevOps workflows:
+This repository demonstrates a production-grade DevOps engineering lifecycle:
 
 ```mermaid
-graph TD
-    Developer([👨‍💻 Developer Push]) -->|git push origin main| GitHub[(GitHub Repository)]
-    GitHub -->|Webhook / Poll SCM| Jenkins[🤖 Jenkins CI/CD Engine :8088]
-    
-    subgraph "CI/CD Pipeline Workflow"
-        Jenkins -->|Step 1| SCMCheckout[Code Checkout]
-        SCMCheckout -->|Step 2| CodeQuality[File & Syntax Checks]
-        CodeQuality -->|Step 3| DockerBuild[Docker Image Build]
-        DockerBuild -->|Step 4| DeployStack[Automated Docker Deploy]
-        DeployStack -->|Step 5| HealthCheck[Health Validation]
-    end
-    
-    subgraph "Registries & Storage"
-        Jenkins -.->|Optional Push| Nexus[(Nexus Docker Registry :8083)]
-        Jenkins -.->|Optional Push| DockerHub[(Docker Hub Registry)]
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#1e293b', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#38bdf8', 'lineColor': '#64748b', 'secondaryColor': '#0f172a', 'tertiaryColor': '#1e1b4b' }}}%%
+flowchart LR
+    Dev(["👨‍💻 Developer<br/><b>Git Commit & Push</b>"]):::devNode
+    Repo[("🐙 GitHub<br/><b>devops_practice</b>")]:::gitNode
+    Jenkins["⚙️ Jenkins CI/CD<br/><b>Pipeline Automation (:8088)</b>"]:::jenkinsNode
+
+    Dev ==>|git push| Repo
+    Repo ==>|Webhook / Poll SCM| Jenkins
+
+    subgraph CI[" 🚀 AUTOMATED CI/CD PIPELINE "]
+        direction TB
+        C1["📥 Checkout SCM"]
+        C2["🔍 Code Quality & Checks"]
+        C3["🐳 Docker Build & Tag"]
+        C4["📦 Push (Nexus :8083 / Hub)"]
+        C5["🚢 Zero-Downtime Deploy"]
+        C6["🩺 Health Check Verification"]
+        
+        C1 --> C2 --> C3 --> C4 --> C5 --> C6
     end
 
-    subgraph "Production Runtime Environment"
-        DeployStack --> DocvolApp[Node.js App :3002]
-        DeployStack --> MongoDB[(MongoDB :27017)]
-        DocvolApp <-->|docvol-net bridge| MongoDB
-        DocvolApp --> Storage[(Host Volume ./docvol-storage)]
-        MongoDB --> MongoData[(Mongo Data ./mongo-data)]
+    Jenkins ==>|Executes Stages| CI
+
+    subgraph PROD[" 🌐 PRODUCTION RUNTIME (Docker Bridge: docvol-net) "]
+        direction TB
+        App["📱 Node.js Application<br/><b>Document Asset Hub (:3002)</b>"]:::appNode
+        DB[("🍃 MongoDB Database<br/><b>Data Store (:27017)</b>")]:::dbNode
+        Express["📊 Mongo-Express<br/><b>Admin GUI (:8082)</b>"]:::uiNode
+        
+        App <==>|Internal DNS 'mongodb'| DB
+        Express -.->|Management| DB
     end
+
+    subgraph PERSIST[" 💾 PERSISTENT VOLUMES "]
+        VolApp[("📁 ./docvol-storage<br/>(Binary Uploads)")]:::volNode
+        VolDB[("💽 ./mongo-data<br/>(BSON Data Files)")]:::volNode
+    end
+
+    C5 ==>|Deploys to| App
+    App --- VolApp
+    DB --- VolDB
+
+    classDef devNode fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#ffffff;
+    classDef gitNode fill:#24292e,stroke:#f0f6fc,stroke-width:2px,color:#ffffff;
+    classDef jenkinsNode fill:#d97706,stroke:#b45309,stroke-width:2px,color:#ffffff;
+    classDef appNode fill:#0284c7,stroke:#0369a1,stroke-width:2px,color:#ffffff;
+    classDef dbNode fill:#15803d,stroke:#166534,stroke-width:2px,color:#ffffff;
+    classDef uiNode fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#ffffff;
+    classDef volNode fill:#475569,stroke:#334155,stroke-width:2px,color:#ffffff;
 ```
 
 ---
