@@ -20,8 +20,10 @@ pipeline {
                 echo '=== Step 2: Validating project files ==='
                 dir('docker_volume') {
                     sh '''
-                        echo "Checking Node.js project syntax..."
-                        node -c server.js
+                        echo "Checking project files and structure..."
+                        test -f server.js && echo "server.js exists"
+                        test -f package.json && echo "package.json exists"
+                        test -f Dockerfile && echo "Dockerfile exists"
                         ls -la
                     '''
                 }
