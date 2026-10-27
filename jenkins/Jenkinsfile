@@ -41,31 +41,26 @@ pipeline {
             }
         }
 
-        stage('Deploy Local Container') {
+        stage('Deploy Application Stack') {
             steps {
-                echo "=== Step 4: Deploying containerized app locally ==="
-                sh """
-                    # Stop & remove old container if running
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
-
-                    # Run new container
-                    docker run -d \
-                      --name ${CONTAINER_NAME} \
-                      -p 3002:3000 \
-                      --restart unless-stopped \
-                      ${IMAGE_NAME}:${IMAGE_TAG}
-                """
+                echo "=== Step 4: Deploying full stack (MongoDB + App + Express) ==="
+                dir('docker_volume') {
+                    sh """
+                        # Start MongoDB & App stack using docker-compose
+                        docker compose down || true
+                        docker compose up -d
+                    """
+                }
             }
         }
 
         stage('Health Check') {
             steps {
-                echo "=== Step 5: Verifying container health ==="
+                echo "=== Step 5: Verifying container stack health ==="
                 sh """
-                    sleep 3
-                    docker ps | grep ${CONTAINER_NAME}
-                    echo "Application is up and running on port 3002!"
+                    sleep 5
+                    docker ps | grep -E "docvol-app|mongodb"
+                    echo "Application is up and connected on port 3002!"
                 """
             }
         }
